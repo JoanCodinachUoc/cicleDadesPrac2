@@ -2,4 +2,4 @@
 ## Tipologia i cicle de vida de les dades (Pràctica 2)
 #### Nom: Joan Codinach Ortiz
 ## Contingut
-#### Aquest repositori consta de tres carpetes.La carpeta img, la qual trobem portades de llibres que hem aconseguit mitjançant web scrapping. La carpeta src, la qual podem veure el codi que hem creat per obtenir el dataset. Per últim, la carpeta dataset, la qual podem trobar les dades que hem aconseguit executant el codi.
+#### Aquest repositori consta de la carpeta Code que hi ha el codi que hem fet per respondre les preguntes. El document respostes que conté les respostes a les preguntes que heu proposat a la pràctica i llavors hi ha 2 fitxers csv que són els que hem utilitzat per realitzar la pràctica
