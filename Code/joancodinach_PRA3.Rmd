@@ -1,0 +1,456 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r message= FALSE, warning=FALSE}
+path = 'heart.CSV'
+heartData <- read.csv(path, row.names=NULL)
+```
+```{r message= FALSE, warning=FALSE}
+path = 'o2Saturation.csv'
+saturationData <- read.csv(path, row.names=NULL)
+
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+print('NA')
+colSums(is.na(heartData))
+print('Blancs')
+colSums(heartData=="")
+print('Zeros')
+colSums(heartData=="0")
+print('Unknown')
+colSums(heartData=="Unknown")
+print('None')
+colSums(heartData=="None")
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if(!require('Rmisc')) install.packages('Rmisc'); library('Rmisc')
+if(!require('dplyr')) install.packages('dplyr'); library('dplyr')
+if(!require('xfun')) install.packages('xfun'); library('xfun')
+if(!require('gridExtra')) install.packages('gridExtra'); library('gridExtra')
+
+summary(heartData[c("chol")])
+histList<- list()
+
+df1 <- heartData %>%
+  group_by(heartData$chol) %>%
+  dplyr::summarise(counts = n())
+df1
+
+n = c("chol")
+heartDataAux = heartData %>% select(all_of(n))
+for(i in 1:ncol(heartDataAux)){
+  col <- names(heartDataAux)[i]
+  ggp <- ggplot(heartDataAux, aes_string(x = col)) +
+    geom_histogram(bins = 30, fill = "cornflowerblue", color = "black",ggtittle = "Comptador d'ocurrències per variable") 
+      histList[[i]] <- ggp  # afegim cada plot a la llista buida
+}
+ multiplot(plotlist = histList, cols = 1)
+
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+index=1
+for(i in heartData$chol){
+  if(i == 564){
+    heartData$chol[index]= 246.3
+  }
+   index = index +1
+}
+n = c("chol")
+heartDataAux = heartData %>% select(all_of(n))
+for(i in 1:ncol(heartDataAux)){
+  col <- names(heartDataAux)[i]
+  ggp <- ggplot(heartDataAux, aes_string(x = col)) +
+    geom_histogram(bins = 30, fill = "cornflowerblue", color = "black",ggtittle = "Comptador d'ocurrències per variable") 
+      histList[[i]] <- ggp  # afegim cada plot a la llista buida
+}
+ multiplot(plotlist = histList, cols = 1)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+summary(heartData)
+```
+
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+str(heartData)
+```
+
+A continuació anem a comprovar la normalitat i homogeneïtat de la variància. Veiem que totes les dades són variables numèriques.Per revisar si poden ser variables normalitzades utilitzem la transformació Box-Cox.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+par(mfrow=c(2,2))
+for(i in 1:ncol(heartData)) {
+  if (is.numeric(heartData[,i])){
+    qqnorm(heartData[,i],main = paste("Normal Q-Q Plot for ",colnames(heartData)[i]))
+    qqline(heartData[,i],col="red")
+    hist(heartData[,i], 
+      main=paste("Histogram for ", colnames(heartData)[i]), 
+      xlab=colnames(heartData)[i], freq = FALSE)
+  }
+}
+```
+Els gràfics de les transformacions Box-Cox ens indiquen que les variables poden ser candidates a normalitzarles si és necessari.
+Per saber si les variables estan normalitzades podem aplicar els tests de Kolmogorov-Smirnov i de Shapiro-Wilk.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+ks.test(heartData$chol, pnorm, mean(heartData$chol), sd(heartData$chol))
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$chol)
+```
+
+En aquest cas s'obtenen resultats diferents per cadascuna de les proves. Mentre que segons Kolmogorov-Smirnov les dades segueixen una distribució normal, el test de Shapiro-Wilk rebutja la hipòtesi nul.la i considera que no és així. Utilitzarem el test de Shapiro-Wilk, j auq es considera un dels mètodes més potents per contrastar la normalitat.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$age)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$sex)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$chol)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$cp)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$trtbps)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$fbs)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$restecg)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$thalachh)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$oldpeak)
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+shapiro.test(heartData$thall)
+```
+
+El test ens indica que cap variable esta normalitzada, ja que el valor p-value és inferior al coeficient 0.05, per tant podem rechazar l'hipotesis i entendre que no segueix una distribució normal.
+
+Tot i així seguint el teorema central del limit com que el nombre de mostres és alt podem aproximan-se a una distribució normal de mitja 0 i desviació estandard 1.
+
+Pel que fa l'homoscedasticitat les proves són el test de Levene quan segueixen una distribució normal i el test Fligner-Killeen quan no compleixen la condició de normalitat.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+#install.packages("car")
+#library(car)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+#leveneTest(trtbps ~ chol, data= heartData)
+fligner.test(exng ~ sex, data = heartData)
+fligner.test(trtbps ~ chol, data = heartData)
+fligner.test(sex ~ cp, data = heartData)
+fligner.test(restecg ~ fbs, data = heartData)
+```
+
+
+Observem en aquest cas que per els tres parells de valors que hem executat el test de Fligner-Killeen el p-value és superior al nivell de significaió i per tant no es rebutja la hipotesi nul.la d'homoscedasticitat, és a dir, que l'homoscedasticitat, la igualtat de variànces es cumpleix.
+
+En aquest cas farem que no compleix les suposicions requerides pels test paramètrics i per tant, aplicarem proves de  Wilcoxon i Mann Whitney.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+wilcox.test(exng ~ chol, data = heartData, subset = chol %in% c(199, 263))
+
+
+```
+
+Aquest era un exemple per veure com funciona la funció wilcox . Però no te gaire sentit perquè només estem mirant colesterols de 199 i 263. Veiem que el subset ha de ser de 2 nivells perquè la proba sigui vàlida. Anem a fer sumes de rangs de Wilcoxon que ens donguin més coneixement.
+
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+wilcox.test(exng ~ sex, data = heartData)
+```
+
+En aquest cas, sí que s'observen diferències estadísticament significatives en l'engina de pit provocada per l'exercici depenent del genere, si és home o dona. A continuació anem a veure amb la variable objectiu (output)
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+wilcox.test(trtbps ~ output, data = heartData)
+wilcox.test(chol ~ output, data = heartData)
+wilcox.test(fbs ~ output, data = heartData)
+wilcox.test(restecg ~ output, data = heartData)
+wilcox.test(thalachh ~ output, data = heartData)
+wilcox.test(exng ~ output, data = heartData)
+wilcox.test(oldpeak ~ output, data = heartData)
+wilcox.test(slp ~ output, data = heartData)
+wilcox.test(caa ~ output, data = heartData)
+wilcox.test(thall ~ output, data = heartData)
+
+```
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+if(!require("corrplot")) install.packages("corrplot"); library("corrplot")
+n = c("age","sex","cp","trtbps","chol","fbs","restecg","thalachh","exng","oldpeak","slp","caa","thall","output")
+factors= heartData %>% select(all_of(n))
+res<-cor(factors)
+corrplot(res,method="color",tl.col="black", tl.srt=30, order = "AOE", 
+   number.cex=0.75,sig.level = 0.01, addCoef.col = "black")
+
+```
+Aquí podem veure la matriu de confusió per veure les correlacions entre atributs. Observem que la correlació més alta és entre els atributs slp i oldpeak amb un valor de -0,58. Pel que fa la variable objectiu veiem com atributs com cp, slp, sex, thall, exng entre d'altres, tenen molt bona correlació i són els que utilitzarem per veure com es distribueix la variable objectiu.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+# Utilitzem aquesta llibreria per fer servir la funcio multiplot()
+if(!require('Rmisc')) install.packages('Rmisc'); library('Rmisc')
+#Crearem primer una llista per mostrar les gràfiques de correlacions
+#Crearem una llista per mostrar els atributs que interessen.
+
+
+n = c("age","trtbps","thalachh","oldpeak") 
+accidentDataRegression = heartData %>% select(all_of(n))
+histList2<- vector('list', ncol(accidentDataRegression))
+for(i in seq_along(accidentDataRegression)){
+  message(i)
+histList2[[i]]<-local({
+  i<-i
+  col <-log(accidentDataRegression[[i]])
+  ggp<- ggplot(data = accidentDataRegression, aes(x = heartData$chol, y=col)) + 
+    geom_point(color = "gray30") + geom_smooth(method = lm,color = "firebrick") + 
+    theme_bw() + xlab("Chol") + ylab(names(accidentDataRegression)[i])
+  })
+
+}
+multiplot(plotlist = histList2, cols = 3)
+
+n = c("thalachh","trtbps","chol","oldpeak") 
+accidentDataRegression = heartData %>% select(all_of(n))
+histList2<- vector('list', ncol(accidentDataRegression))
+for(i in seq_along(accidentDataRegression)){
+  message(i)
+histList2[[i]]<-local({
+  i<-i
+  col <-log(accidentDataRegression[[i]])
+  ggp<- ggplot(data = accidentDataRegression, aes(x = heartData$age, y=col)) + 
+    geom_point(color = "gray30") + geom_smooth(method = lm,color = "firebrick") + 
+    theme_bw() + xlab("Age") + ylab(names(accidentDataRegression)[i])
+  })
+
+}
+multiplot(plotlist = histList2, cols = 3)
+
+n = c("caa","sex","slp","oldpeak","thall","thalachh","cp") 
+accidentDataRegression = heartData %>% select(all_of(n))
+histList2<- vector('list', ncol(accidentDataRegression))
+for(i in seq_along(accidentDataRegression)){
+  message(i)
+histList2[[i]]<-local({
+  i<-i
+  col <-log(accidentDataRegression[[i]])
+  ggp<- ggplot(data = accidentDataRegression, aes(x = heartData$output, y=col)) + 
+    geom_point(color = "gray30") + geom_smooth(method = lm,color = "firebrick") + 
+    theme_bw() + xlab("Ouput") + ylab(names(accidentDataRegression)[i])
+  })
+
+}
+multiplot(plotlist = histList2, cols = 3)
+```
+
+
+Podem veure que les regression entres dades no categoriques podem veure la majoria dels registres. Pel que fa el colesterol veiem que la millore regressió la obté amb l'atribut de l'edat la millor regressió amb l'atribut de la talassemia.
+
+Per veure les regressions amb dades catgoriques podem veure que no es veu tan be. Com per exemple la variable objectiu. Bàsicament perque el eix x només te 2 valors i aixo fa que la majoria dels punts quedin amagats. No són tan visuals.
+
+
+Anem a veure la variable objectiu.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+path = 'heart.CSV'
+factorData <- read.csv(path, row.names=NULL)
+factorData[] <- lapply(factorData, factor)
+str(factorData)
+```
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+df1 <- factorData %>%
+  group_by(factorData$output) %>%
+  dplyr::summarise(counts = n())
+df1
+plotbyDefault<-ggplot(factorData,aes(output))+geom_bar() +labs(x="Default", y="Clients")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("blue","#008000"))+ggtitle("Variable Objectiu")
+grid.arrange(plotbyDefault)
+
+```
+
+Observem que de la variable objectiu tenim més mostres de persones amb possibilitat d'un atac cardiac que no. Veiem que els dos conjunts eestàn bastant igualats. Lo interessant d'aixó és que tenim un problema binari equilibrat, d'aquesta manera mesures de rendiment dels models com l'exactitud no porten confusió, en canvi, en problemes binaris no equilibrats si.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+plotbyCaa<-ggplot(factorData,aes(caa,fill=output))+geom_bar() +labs(x="caa", y="People")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("black","#008000"))+ggtitle("caa")
+plotbyOldpeak<-ggplot(factorData,aes(oldpeak,fill=output))+geom_bar() +labs(x="oldpeak", y="People")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("black","#008000"))+ggtitle("oldpeak")
+plotbyThall<-ggplot(factorData,aes(thall,fill=output))+geom_bar() +labs(x="thall", y="People")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("black","#008000"))+ggtitle("thall")
+plotbySlp<-ggplot(factorData,aes(slp,fill=output))+geom_bar() +labs(x="slp", y="People")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("black","#008000"))+ggtitle("slp")
+plotbySex<-ggplot(factorData,aes(sex,fill=output))+geom_bar() +labs(x="sex", y="People")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("black","#008000"))+ggtitle("sex")
+plotbyThalachh<-ggplot(factorData,aes(thalachh,fill=output))+geom_bar() +labs(x="thalachh", y="People")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("black","#008000"))+ggtitle("thalachh")
+plotbyCp<-ggplot(factorData,aes(cp,fill=output))+geom_bar() +labs(x="cp", y="People")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("black","#008000"))+ggtitle("cp")
+plotbyAge<-ggplot(factorData,aes(age,fill=output))+geom_bar() +labs(x="age", y="People")+ guides(fill=guide_legend(title=""))+ scale_fill_manual(values=c("black","#008000"))+ggtitle("age")
+grid.arrange(plotbyCaa)
+grid.arrange(plotbyOldpeak)
+grid.arrange(plotbyThall)
+grid.arrange(plotbySlp)
+grid.arrange(plotbySex)
+grid.arrange(plotbyThalachh)
+grid.arrange(plotbyCp)
+grid.arrange(plotbyAge)
+```
+En aquests gràfics podem veure els valors que predominen en la variable objectiu dels atributs que tenen més correlació. Si algun gràfic no queda clar podem fer una taula de resultats.
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+tabla_DMT <- table( heartData$output,heartData$caa)
+tabla_DMT
+```
+
+Per al primer cas que relacionem el nombre de vasos majors veiem que a mesura que augmenta el número la probabilitat de no patir un atac és major, però si quan és igual a 4 augmenta molt les possibilitats de patir-lo. Això pot ser que sigui així o potser és que hi ha poques dades i ha resultat que 4 de 5 ho tenien. Aquí veiem un clar exemple que com més mostres hi hagi més coneixement podem treure.
+
+Per l'atribut de depressió del segment de l'electrocardiograma(oldpeak) veiem que la probabilitat és major de patir un atac si el valor és petit. Veiem que la majoria de casos passen quan oldpeak és menor a 2.2.
+
+Per l'atribut talassèmia veiem que l'etiqueta amb més risc correspon quan és 2 que equival quan la sang és normal. És estrany perquè és superior a 3 el qual equival a defecte reversible, és a dir, que s'observa flux sanguini, però no és normal. Llavors aquesta dada si apliquem sentit comú sembla que alguna cosa falli. Aquestes dades les intento tractar-les amb més precaució o fer altres proves que corroborin aquest fet.
+
+En aquest cas he mirat un altre lloc i efectivament estava malament. Com sabíem l'atribut és talassèmia que bàsicament és una malaltia hereditària que afecta la creació de globus vermells i a l'hemoglobina del cos. Llavors l'etiqueta 2, ens parla del defecte permanent de la producció de globus vermells (anèmia) i que evidentment significa un gran impacte per la salut i el benestar del pacient. Per altra banda, l'etiqueta 3 ens parla del mateix, però sent reversible, és a dir, que amb un tractament adequat, podem millorar i corregir el defecte augmentat la producció d'hemoglobina sana. Per tant, ara sí que té sentit que l'etiqueta 2 sigui la més probable de patir un atac cardíac.
+
+Per l'atribut slp veiem que és més probable patir un atac si el pendent del segment de l'exercici màxim és positiva.
+
+Per l'atribut gènere veiem que és molt més probable que pateixi un atac cardíac les dones que els homes. Una dada impactant. Aquí podríem fer un estudi paral·lel de buscar el motiu. Veure si és un tema del cos que funciona diferent, si és perquè fan menys exercici, etc.
+
+Buscant informació en una altra pàgina m'ha sortit que era el revés l'etiquetatge. Que 0 eren els homes i 1 les dones. Llavors seria el revés. En definitiva l'etiqueta 0 és més probable que tingui un atac cardíac. Crec que no costa res que en la descripció del kaggle si hi ha un atribut categòric que menciones a què correspon cada categoria i no un simple "Sex : Sex of the patient". Dona molt poc coneixement.
+
+Per l'atribut de freqüència cardíaca màxima veiem que com més alta més probabilitat de patir un atac cardíac.
+
+Per l'atribut cp observem que si tens dolor al pit, sigui quin sigui el tipus és més probable de patir un atac cardíac.
+
+Per l'atribut edat que potser més d'un diria que com més gran més possibilitat de patir un atac cardíac les dades ens diuen, que no té per què. Inclús sembla que com més petit més probabilitat de patir un atac cardíac. També és veritat que com més jove ets també fas més esport.
+
+Gràcies a aquests estudis hem pogut resoldre a la pregunta: Quins factors de risc augmenten la probabilitat de patir un atac cardíac?
+
+A continuació resoldrem la pregunta: És possible predir el risc de patir un atac cardíac? Per fer-ho aplicarem un algorisme de classificació.
+
+El nostre objectiu és crear un arbre de decisió que permeti analitzar si una persona te risc de predir un atac cardíac.
+
+
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+library(C50)
+
+sample <- sample(203,100)
+test <- heartData[sample,]
+train <- heartData[-sample,]
+
+aa <- heartData[sample,]
+trainn <- factorData[-sample,]
+model <- C5.0(train[-14],trainn$output,rules = TRUE)
+summary(model)
+```
+
+Observem que en els dos datasets train i test hi ha outputs 0 i 1. Aixó és important perquè no hi hagi un overfitting o un underfitting que faria predir potser molt be el dataset d'entrenament però al predir noves mostres no sortiria un bon model de predicció.
+
+Veiem que a part de ser un algorisme de classificació també ens dona regles.Per tant, podem continuar responent a la pregunta: : Quins factors de risc augmenten la probabilitat de patir un atac cardíac? 
+
+Veiem la regla 5 per exemple que ens diu que si thall es 2, és a dir,quan parlem de la talassemia d'una malaltia permanent hi ha un 86% de possibilitats de predir un atac o la regle 9 que ens diu que si de genere tens l'etiqueta 0 (que correspont a l'etiqueta de més probabilitat) i tens qualsevol dels tipus de mal al pit les probabilitats són de un  91%. Veiem que són regles que tenen molt concordança amb les conclusions que hem tret abans dels factors de risc. Tenim un total de 12 regles i veiem nomes un 6.4% de error i una matriu de confusió amb bons resultats.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+predicted_model <- predict( model, test[-14], type="class" )
+class(predicted_model)
+class(test[14])
+test$output <- as.factor(test$output)
+index = 1
+pred = 0
+for( i in test$output ){
+  if(i == predicted_model[index]){
+    pred = pred +1
+  }
+  index = index +1
+}
+print(sprintf("La precisión del árbol es: %.0f %%",pred))
+```
+No hem sortia directament amb el codi i he hagut de fer un canvi de tipus de variable i anar comparant el valor predit amb el valor real, el resultat ha sigut dun 71%. 
+
+
+```{r}
+heartDataNew<-read.csv("./heart.CSV",header=T,sep=",")
+library(C50)
+
+
+sample <- sample(203,100)
+test <- heartDataNew[sample,]
+train <- heartDataNew[-sample,]
+
+train$output<-as.factor(train$output)
+str(train)
+model <- C5.0(train[-14],train$output,rules = TRUE)
+summary(model)
+```
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+predicted_model <- predict( model, test[-14], type="class" )
+class(predicted_model)
+class(test[14])
+test$output <- as.factor(test$output)
+index = 1
+pred = 0
+for( i in test$output ){
+  if(i == predicted_model[index]){
+    pred = pred +1
+  }
+  index = index +1
+}
+print(sprintf("La precisión del árbol es: %.0f %%",pred))
+```
+
+
+Utilitzant les dades directament sense tocarles en aquest cas obtenim una millor precisió del model. A vegades amb algorismes d'aquest tipus que et fan particions a partir de les dades es possible que passi encara que nno acostuma a passar. En definitiva direm que accertariem 3 de 4 pacients que fessim un predicció de si pateix un atac cardiac aproximadament.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
